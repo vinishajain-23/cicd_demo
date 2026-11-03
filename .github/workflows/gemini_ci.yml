@@ -1,0 +1,36 @@
+name: Gemini LLM CI Check
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  test_llm_call:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Python Environment
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies (including Black)
+      run: pip install -r requirements.txt
+
+    - name: Run Black Code Formatting Check
+      run: black --check --diff .
+
+    - name: Run LLM Script and Validate Output
+      env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      run: |
+        python 01-llm-call.py
+        if [ ! -s loan_pmt.py ]; then
+          echo "CI Failed: loan_pmt.py was not created or is empty."
+          exit 1
+        fi
+        echo "CI Passed: loan_pmt.py created successfully."
